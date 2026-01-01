@@ -1,0 +1,3 @@
+C:\Users\mmahdoui\source\project\AppPortal\AGA\frontend\frontend\obj\Debug\frontend.esproj.CoreCompileInputs.cache
+C:\Users\mmahdoui\source\repos\AppPortal\AGA\frontend\frontend\obj\Debug\frontend.esproj.CoreCompileInputs.cache
+C:\Users\mmahdoui\source\repos\AppPortal\AGB\frontend\frontend\obj\Debug\frontend.esproj.CoreCompileInputs.cache

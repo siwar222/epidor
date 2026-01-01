@@ -1,0 +1,261 @@
+<div class="container mt-4">
+
+  <h2>Liste des visiteurs</h2>
+
+  <div class="row mt-3 mb-3">
+    <div class="col-6 d-flex flex-wrap gap-2 justify-content-start">
+      <button class="btn btn-outline-warning rounded p-3 fs-5" (click)="goBack()">
+        <i class="bi bi-arrow-90deg-left"></i>
+      </button>
+    </div>
+
+    <div class="col-6 d-flex flex-wrap gap-2 justify-content-end">
+      <button class="btn btn-primary rounded p-3 fs-5" (click)="addNew()">
+        <i class="bi bi-plus-circle-dotted"></i>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success mt-3 rounded">{{ successMessage }}</div>
+  <div *ngIf="errorMessage" class="alert alert-danger mt-3 rounded">{{ errorMessage }}</div>
+
+  <div *ngIf="isEditing" class="card p-3 mb-4 rounded">
+    <form (ngSubmit)="onSubmit()" #visitorForm="ngForm">
+
+      <!-- Nom -->
+      <div class="mb-3">
+        <label class="form-label">Nom</label>
+        <input
+          type="text"
+          class="form-control rounded"
+          [(ngModel)]="visitor.LastName"
+          name="LastName"
+          required
+          #nom="ngModel" />
+        <div class="text-danger" *ngIf="nom.invalid && nom.touched">
+          Le nom est requis.
+        </div>
+      </div>
+
+      <!-- Prénom -->
+      <div class="mb-3">
+        <label class="form-label">Prénom</label>
+        <input
+          type="text"
+          class="form-control rounded"
+          [(ngModel)]="visitor.FirstName"
+          name="FirstName"
+          required
+          #prenom="ngModel" />
+        <div class="text-danger" *ngIf="prenom.invalid && prenom.touched">
+          Le prénom est requis.
+        </div>
+      </div>
+
+      <!-- Téléphone -->
+      <div class="mb-3">
+        <label class="form-label">Téléphone</label>
+        <input
+          type="text"
+          class="form-control rounded"
+          [(ngModel)]="visitor.MobileNumber"
+          name="MobileNumber"
+          required
+          #telephone="ngModel" />
+        <div class="text-danger" *ngIf="telephone.invalid && telephone.touched">
+          Le téléphone est requis.
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input
+          type="email"
+          class="form-control rounded"
+          [(ngModel)]="visitor.Email"
+          name="Email"
+          required
+          #email="ngModel" />
+        <div class="text-danger" *ngIf="email.invalid && email.touched">
+          L'email est requis.
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <button class="btn btn-primary rounded p-3 fs-5" [disabled]="visitorForm.invalid">
+          <i class="bi bi-floppy"></i> {{ isNew ? 'Ajouter' : 'Modifier' }}
+        </button>
+        <button type="button" class="btn btn-outline-warning rounded p-3 fs-5" (click)="cancel()">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+  <!-- Filtre et pagination -->
+  <div class="row mt-5 mb-2" *ngIf="!isEditing">
+    <div class="col-2 d-flex flex-wrap gap-2 justify-content-start">
+      <div class="mb-3 d-flex justify-content-start align-items-center">
+        <select id="pageSize" class="form-select w-auto py-3 rounded" [(ngModel)]="pageSize" (change)="changePageSize(pageSize)">
+          <option *ngFor="let size of pageSizes" [value]="size">{{ size }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="col-10 gap-2 justify-content-end">
+      <div class="mb-3">
+        <input type="text" class="form-control rounded py-3" placeholder="Rechercher ..." [(ngModel)]="searchQuery" (input)="filterVisitors()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Table visiteurs -->
+  <table class="table table-striped" *ngIf="!isEditing">
+    <thead>
+      <tr class="border-top">
+        <!-- Nom -->
+        <th (click)="sortData('nom')" class="sortable-header position-relative text-start">
+          <div class="d-flex justify-content-between align-items-center" style="cursor: pointer">
+            <span>Nom</span>
+            <span class="d-flex flex-column gap-0" style="line-height: 1;">
+              <i class="bi"
+                 [ngClass]="{
+                   'bi-caret-up-fill text-dark': sortColumn === 'nom' && sortDirection === 'asc',
+                   'bi-caret-up text-muted': sortColumn !== 'nom' || sortDirection !== 'asc'
+                 }"></i>
+              <i class="bi"
+                 [ngClass]="{
+                   'bi-caret-down-fill text-dark': sortColumn === 'nom' && sortDirection === 'desc',
+                   'bi-caret-down text-muted': sortColumn !== 'nom' || sortDirection !== 'desc'
+                 }"></i>
+            </span>
+          </div>
+        </th>
+
+        <!-- Prénom -->
+        <th (click)="sortData('prenom')" class="sortable-header position-relative text-start">
+          <div class="d-flex justify-content-between align-items-center" style="cursor: pointer">
+            <span>Prénom</span>
+            <span class="d-flex flex-column gap-0" style="line-height: 1;">
+              <i class="bi"
+                 [ngClass]="{
+                   'bi-caret-up-fill text-dark': sortColumn === 'prenom' && sortDirection === 'asc',
+                   'bi-caret-up text-muted': sortColumn !== 'prenom' || sortDirection !== 'asc'
+                 }"></i>
+              <i class="bi"
+                 [ngClass]="{
+                   'bi-caret-down-fill text-dark': sortColumn === 'prenom' && sortDirection === 'desc',
+                   'bi-caret-down text-muted': sortColumn !== 'prenom' || sortDirection !== 'desc'
+                 }"></i>
+            </span>
+          </div>
+        </th>
+
+        <!-- Téléphone -->
+        <th (click)="sortData('telephone')" class="sortable-header position-relative text-start">
+          <div class="d-flex justify-content-between align-items-center" style="cursor: pointer">
+            <span>Téléphone</span>
+          </div>
+        </th>
+
+        <!-- Email -->
+        <th (click)="sortData('email')" class="sortable-header position-relative text-start">
+          <div class="d-flex justify-content-between align-items-center" style="cursor: pointer">
+            <span>Email</span>
+          </div>
+        </th>
+
+        <th class="text-end pe-4">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let v of visitors; let i = index">
+        <td>{{ v.LastName }}</td>
+        <td>{{ v.FirstName }}</td>
+        <td>{{ v.MobileNumber }}</td>
+        <td>{{ v.Email }}</td>
+        <td>
+          <div class="dropdown float-end">
+            <button class="btn btn-primary dropdown-toggle rounded p-2"
+                    type="button"
+                    [id]="'dropdownMenuButton' + i"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+              <i class="bi bi-gear"></i>
+            </button>
+            <ul class="dropdown-menu" [attr.aria-labelledby]="'dropdownMenuButton' + i">
+              <li><a class="dropdown-item" style="cursor: pointer" (click)="edit(v)">Afficher / Modifier</a></li>
+              <li><a class="dropdown-item" style="cursor: pointer" (click)="openDeleteModal(v)">Supprimer</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  <div class="d-flex justify-content-center align-items-center mt-3 mb-5" *ngIf="!isEditing">
+    <nav>
+      <ul class="pagination mb-0">
+        <li class="page-item" [class.disabled]="page === 1">
+          <button class="page-link p-3" (click)="changePage(page - 1)">Précédent</button>
+        </li>
+
+        <li *ngFor="let p of pages"
+            class="page-item"
+            [class.active]="p !== '...' && p === page"
+            [class.disabled]="p === '...'">
+          <button *ngIf="p !== '...'" class="page-link p-3" (click)="changePage(+p)">{{ p }}</button>
+          <span *ngIf="p === '...'" class="page-link">...</span>
+        </li>
+
+        <li class="page-item" [class.disabled]="page === totalPages">
+          <button class="page-link p-3" (click)="changePage(page + 1)">Suivant</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- Modals pour suppression -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteLabel">Suppression Visiteur</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Voulez-vous vraiment supprimer le visiteur <strong>{{ visitorToDelete?.LastName }} {{ visitorToDelete?.FirstName}}</strong> ?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger rounded" (click)="confirmDelete()">
+          <i class="bi bi-trash3"></i> Supprimer
+        </button>
+        <button type="button" class="btn btn-outline-warning rounded" data-bs-dismiss="modal">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="hasDependenciesDeleteModal" tabindex="-1" aria-labelledby="hasDependenciesDeleteLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="hasDependenciesDeleteLabel">Suppression Visiteur</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Vous ne pouvez pas supprimer le visiteur <strong>{{ visitorToDelete?.LastName}} {{ visitorToDelete?.FirstName}}</strong> car il est utilisé par une autre entité.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-warning rounded" data-bs-dismiss="modal">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

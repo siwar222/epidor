@@ -1,0 +1,377 @@
+<div class="col-12 mt-4">
+  <h2 class="text-uppercase">
+    {{
+      isNewMode() ? 'Ajouter session' :
+      isViewMode() ? 'Afficher session' :
+      isEditMode() ? 'Modifier session' :
+      'Gestion sessions'
+    }}
+  </h2>
+
+  <div class="row mt-3 mb-3">
+    <div class="col-6 d-flex flex-wrap gap-2 justify-content-start">
+      <button class="btn btn-outline-warning rounded p-3 fs-5"
+              (click)="goBack()"
+              [disabled]="isEditMode()"
+              [class.opacity-0]="isEditMode()">
+        <i class="bi bi-arrow-90deg-left"></i>
+      </button>
+    </div>
+
+    <div class="col-6 d-flex flex-wrap gap-2 justify-content-end">
+      <button class="btn btn-primary rounded p-3 fs-5"
+              (click)="addNew()"
+              [disabled]="isEditMode()"
+              [class.opacity-0]="isEditMode()">
+        <i class="bi bi-plus-circle-dotted"></i>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="successMessage()" class="alert alert-success mt-3 rounded">{{ successMessage() }}</div>
+  <div *ngIf="errorMessage()" class="alert alert-danger mt-3 rounded" style="white-space: pre-line">{{ errorMessage() }}</div>
+
+  <div *ngIf="isEditMode()" class="card p-3 mb-4 rounded">
+    <form (ngSubmit)="onSubmit()" #companyForm="ngForm">
+
+      <div class="mb-3">
+        <label class="form-label">Name <span class="text-danger">*</span></label>
+        <input type="text" class="form-control rounded"
+               [ngModel]="item()?.name" name="name" required
+               [readonly]="isViewMode()"
+               #name="ngModel"
+               [ngClass]="{'is-invalid': (name.invalid && name.touched) || backendValidationErrors()['name']}"
+               (ngModelChange)="setField('name', $event)" />
+        <div class="invalid-feedback" *ngIf="name.invalid && name.touched">Le nom est requis.</div>
+        <div class="invalid-feedback" *ngIf="backendValidationErrors()['name']">{{ backendValidationErrors()['name'][0] }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Date de début <span class="text-danger">*</span></label>
+        <input type="date" class="form-control rounded"
+               [ngModel]="item()?.startDate" name="startDate" required
+               [readonly]="isViewMode()"
+               #startDate="ngModel"
+               [ngClass]="{'is-invalid': (startDate.invalid && startDate.touched) || backendValidationErrors()['startDate']}"
+               (ngModelChange)="setField('startDate', $event)" />
+        <div class="invalid-feedback" *ngIf="startDate.invalid && startDate.touched">La date de début est requise.</div>
+        <div class="invalid-feedback" *ngIf="backendValidationErrors()['startDate']">{{ backendValidationErrors()['startDate'][0] }}</div>
+      </div>
+
+      <div class="mb-5">
+        <label class="form-label">Date de fin <span class="text-danger">*</span></label>
+        <input type="date" class="form-control rounded"
+               [ngModel]="item()?.endDate" name="endDate" required
+               [readonly]="isViewMode()"
+               #endDate="ngModel"
+               [ngClass]="{'is-invalid': (endDate.invalid && endDate.touched) || backendValidationErrors()['endDate']}"
+               (ngModelChange)="setField('endDate', $event)" />
+        <div class="invalid-feedback" *ngIf="endDate.invalid && endDate.touched">La date de fin est requise.</div>
+        <div class="invalid-feedback" *ngIf="backendValidationErrors()['endDate']">{{ backendValidationErrors()['endDate'][0] }}</div>
+      </div>
+
+      <div class="mb-3 form-check form-switch">
+        <input class="form-check-input rounded form-switch-lg"
+               type="checkbox"
+               id="isActiveSwitch"
+               [ngModel]="item()?.isActive"
+               [ngModelOptions]="{standalone: true}"
+               [disabled]="(currentActiveSession()?.isActive && currentActiveSession()?.id != item()?.id) || isViewMode()"
+               (ngModelChange)="setField('isActive', $event)" />
+        <label class="form-check-label ms-4" for="isActiveSwitch">Session activée</label>
+      </div>
+      <div class="form-text text-warning mt-2" *ngIf="currentActiveSession()?.isActive && currentActiveSession()?.id != item()?.id && !isViewMode()">
+        <p class="h6">
+          La session <b>{{ currentActiveSession()?.name }}</b> est actuellement activée,
+          veuillez la désactiver afin d'activer cette session.
+        </p>
+        <button class="btn btn-danger btn-sm rounded" type="button" (click)="confirmDeactivateSession()" *ngIf="!canDeactivateSession()">
+          <i class="bi bi-x-octagon me-1"></i> Désactiver <b>{{ currentActiveSession()?.name }}</b> ?
+        </button>
+        <span class="text-warning mt-2 h6" *ngIf="canDeactivateSession()">
+          Voulez-vous vraiment désactiver la session <strong>{{ currentActiveSession()?.name }}</strong> ?
+        </span>
+        <button type="button" class="btn btn-outline-warning btn-sm rounded me-2" (click)="cancelDeactivateSession()" *ngIf="canDeactivateSession()">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+        <button type="button" class="btn btn-danger btn-sm rounded" (click)="deactivateSession(currentActiveSession()?.id ?? null)" *ngIf="canDeactivateSession()">
+          <i class="bi bi-x-octagon"></i> Désactiver
+        </button>
+      </div>
+      <span class="text-success mt-2 h6" *ngIf="isSessionDeactivated()">
+        La dernière session active a été désactivée avec succès. Vous pouvez activer cette session.
+      </span>
+
+      <div class="mb-3 mt-5">
+        <label class="form-label">Description</label>
+        <textarea class="form-control rounded"
+                  rows="4"
+                  [ngModel]="item()?.description"
+                  name="description"
+                  [readonly]="isViewMode()"
+                  #description="ngModel"
+                  [ngClass]="{
+                    'is-invalid': (description.invalid && description.touched) || backendValidationErrors()['description']
+                  }"
+                  (ngModelChange)="setField('description', $event)">
+        </textarea>
+        <div class="invalid-feedback" *ngIf="description.invalid && description.touched">
+          La description est requise.
+        </div>
+        <div class="invalid-feedback" *ngIf="backendValidationErrors()['description']">
+          {{ backendValidationErrors()['description'][0] }}
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <button *ngIf="!isViewMode() && !item()?.hasDependencies"
+                class="btn btn-primary rounded p-3 fs-5"
+                [disabled]="companyForm.invalid">
+          <i class="bi bi-floppy"></i> {{ isNewMode() ? 'Ajouter' : 'Modifier' }}
+        </button>
+        <div *ngIf="item()?.hasDependencies" class="text-warning me-2">
+          Vous ne pouvez pas modifier la session
+          <strong>{{ item()?.name }}</strong>
+          car elle est utilisée par une autre entité.
+        </div>
+
+        <button *ngIf="isViewMode() && !item()?.hasDependencies"
+                type="button"
+                class="btn btn-warning rounded p-3 fs-5"
+                (click)="enableEditing()">
+          <i class="bi bi-pencil-square"></i> Passer en modification
+        </button>
+
+        <button type="button" class="btn btn-outline-warning rounded p-3 fs-5" (click)="cancel()">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+
+
+  <div class="row mt-5 mb-2" *ngIf="!isEditMode()">
+    <div class="col-3">
+      <select class="form-select w-auto py-3 rounded"
+              [ngModel]="pageSize()"
+              (ngModelChange)="pageSize.set($event)"
+              (change)="changePageSize(pageSize())">
+        <option *ngFor="let size of pageSizes" [value]="size">{{ size }}</option>
+      </select>
+    </div>
+    <div class="col-9">
+      <input type="text" class="form-control rounded py-3" placeholder="Rechercher ..."
+             [ngModel]="searchQuery()" (input)="searchQuery.set($any($event.target).value); updateFiltered()" />
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading() && filteredItems().length === 0 && !isEditMode()" class="alert alert-warning text-center rounded">
+    Aucune session trouvée.
+  </div>
+
+  <table class="table table-striped" *ngIf="!isEditMode()">
+    <thead>
+      <tr class="border-top">
+        <th (click)="sortData('name')" style="cursor: pointer">
+          Nom
+          <i class="bi ms-1"
+             [ngClass]="{
+             'bi-caret-up-fill': sortColumn() === 'name' && sortDirection() === 'asc',
+             'bi-caret-down-fill': sortColumn() === 'name' && sortDirection() === 'desc',
+             'bi-caret-up text-muted': sortColumn() !== 'name',
+             'bi-caret-down text-muted': sortColumn() !== 'name'
+           }"></i>
+        </th>
+
+        <th (click)="sortData('startDate')" style="cursor: pointer">
+          Date de début
+          <i class="bi ms-1"
+             [ngClass]="{
+             'bi-caret-up-fill': sortColumn() === 'startDate' && sortDirection() === 'asc',
+             'bi-caret-down-fill': sortColumn() === 'startDate' && sortDirection() === 'desc',
+             'bi-caret-up text-muted': sortColumn() !== 'startDate',
+             'bi-caret-down text-muted': sortColumn() !== 'startDate'
+           }"></i>
+        </th>
+
+        <th (click)="sortData('endDate')" style="cursor: pointer">
+          Date de fin
+          <i class="bi ms-1"
+             [ngClass]="{
+             'bi-caret-up-fill': sortColumn() === 'endDate' && sortDirection() === 'asc',
+             'bi-caret-down-fill': sortColumn() === 'endDate' && sortDirection() === 'desc',
+             'bi-caret-up text-muted': sortColumn() !== 'endDate',
+             'bi-caret-down text-muted': sortColumn() !== 'endDate'
+           }"></i>
+        </th>
+
+        <th class="">Activée</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let c of items(); let i = index">
+        <td>{{ c.name }}</td>
+        <td>{{ c.startDate | date:'dd/MM/yyyy' }}</td>
+        <td>{{ c.endDate | date:'dd/MM/yyyy' }}</td>
+        <td>
+          <h4>
+            <span class="badge rounded-pill" [ngClass]="c.isActive ? 'bg-success' : 'bg-danger'">
+              <i class="bi" [ngClass]="c.isActive ? 'bi-check-all' : 'bi-x'"></i>
+            </span>
+          </h4>
+        </td>
+        <td>
+          <div class="dropdown float-end">
+            <button class="btn btn-primary dropdown-toggle rounded p-2"
+                    type="button"
+                    [id]="'dropdownMenuButton' + i"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+              <i class="bi bi-gear"></i>
+            </button>
+            <ul class="dropdown-menu rounded" [attr.aria-labelledby]="'dropdownMenuButton' + i">
+              <li><a class="dropdown-item" style="cursor:pointer" (click)="view(c)">Afficher</a></li>
+              <li><a class="dropdown-item" style="cursor:pointer" (click)="edit(c)">Modifier</a></li>
+              <li *ngIf="!c.isActive"><a class="dropdown-item" style="cursor:pointer" (click)="openActionModal(c, 'activate')">Activer</a></li>
+              <li *ngIf="c.isActive"><a class="dropdown-item" style="cursor:pointer" (click)="openActionModal(c, 'deactivate')">Désactiver</a></li>
+              <li><a class="dropdown-item" style="cursor: pointer" (click)="openDeleteModal(c)">Supprimer</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="d-flex justify-content-center align-items-center mt-5 mb-5 pt-1 pb-5" *ngIf="!isEditMode()">
+    <nav>
+      <ul class="pagination mb-0">
+        <li class="page-item" [class.disabled]="page() === 1">
+          <button class="page-link p-3 rounded-start" (click)="changePage(page() - 1)">Précédent</button>
+        </li>
+        <li *ngFor="let p of pages()" class="page-item"
+            [class.active]="p !== '...' && +p === page()"
+            [class.disabled]="p === '...'">
+          <button *ngIf="p !== '...'" class="page-link p-3" (click)="changePage(+p)">{{ p }}</button>
+          <span *ngIf="p === '...'" class="page-link">...</span>
+        </li>
+        <li class="page-item" [class.disabled]="page() === totalPages()">
+          <button class="page-link p-3 rounded-end" (click)="changePage(page() + 1)">Suivant</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+</div>
+
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content rounded">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteLabel">Suppression Session</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Voulez-vous vraiment supprimer la session <strong>{{ itemToDelete()?.name }}</strong> ?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger rounded" (click)="confirmDelete()">
+          <i class="bi bi-trash3"></i> Supprimer
+        </button>
+        <button type="button" class="btn btn-outline-warning rounded" data-bs-dismiss="modal">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="hasDependenciesDeleteModal" tabindex="-1" aria-labelledby="hasDependenciesDeleteLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content rounded">
+      <div class="modal-header">
+        <h5 class="modal-title" id="hasDependenciesDeleteLabel">Suppression Session</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Vous ne pouvez pas supprimer la session <strong>{{ itemToDelete()?.name }}</strong> car elle est utilisée par une autre entité.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-warning rounded" data-bs-dismiss="modal">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalLabel" aria-hidden="true">
+  <div class="modal-dialog"
+       [ngClass]="{ 'modal-lg': actionType() === 'activate' }">
+    <div class="modal-content rounded">
+      <div class="modal-header">
+        <h5 *ngIf="actionType() === 'activate'" class="modal-title" id="actionModalLabel">Aciver Session</h5>
+        <h5 *ngIf="actionType() === 'deactivate'" class="modal-title" id="actionModalLabel">Désactivier Session</h5>
+        <button type="button" class="btn-close" (click)="closeActionModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <p *ngIf="actionType() === 'activate'">
+          Confirmez-vous l’activation de de la session <strong>{{ selectedSession()?.name }} </strong> ?
+        </p>
+        <p *ngIf="actionType() === 'deactivate'">
+          Confirmez-vous la désactivation de la session <strong>{{ selectedSession()?.name }} </strong> ?
+        </p>
+
+        <span class="form-text text-warning mt-2" *ngIf="currentActiveSession()?.isActive && currentActiveSession()?.id != selectedSession()?.id">
+          <p class="h6">
+            La session <b>{{ currentActiveSession()?.name }}</b> est actuellement activée,
+            veuillez la désactiver afin d'activer cette session.
+          </p>
+          <button class="btn btn-danger btn-sm rounded" type="button" (click)="confirmDeactivateSession()" *ngIf="!canDeactivateSession()">
+            <i class="bi bi-x-octagon me-1"></i> Désactiver <b>{{ currentActiveSession()?.name }}</b> ?
+          </button>
+          <span class="text-warning mt-2 h6" *ngIf="canDeactivateSession()">
+            Voulez-vous vraiment désactiver la session <strong>{{ currentActiveSession()?.name }}</strong> ?
+          </span>
+          <button type="button" class="btn btn-outline-warning btn-sm rounded me-2" (click)="cancelDeactivateSession()" *ngIf="canDeactivateSession()">
+            <i class="bi bi-x-octagon"></i> Annuler
+          </button>
+          <button type="button" class="btn btn-danger btn-sm rounded" (click)="deactivateSession(currentActiveSession()?.id ?? null)" *ngIf="canDeactivateSession()">
+            <i class="bi bi-x-octagon"></i> Désactiver
+          </button>
+        </span>
+        <span class="text-success mt-2 h6" *ngIf="isSessionDeactivated()">
+          La dernière session active a été désactivée avec succès. Vous pouvez activer cette session.
+        </span>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-warning rounded" data-bs-dismiss="modal">
+          <i class="bi bi-x-octagon"></i> Annuler
+        </button>
+        <button type="button"
+                class="btn rounded text-white"
+                [disabled]="
+                  actionType() === 'activate'
+                  && currentActiveSession()?.isActive
+                  && currentActiveSession()?.id !== selectedSession()?.id
+                "
+                [ngClass]="{
+                  'btn-success': actionType() === 'activate',
+                  'btn-danger': actionType() === 'deactivate'
+                }"
+                (click)="confirmAction()">
+          <i class="bi"
+             [ngClass]="{
+               'bi-check': actionType() === 'activate',
+               'bi-x-circle': actionType() === 'deactivate'
+             }"></i>
+          {{ getActionButtonLabel() }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
