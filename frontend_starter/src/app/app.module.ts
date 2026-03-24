@@ -11,13 +11,16 @@ import { ContentBottomComponent } from './components/content/content-bottom/cont
 import { ContentMainComponent } from './components/content/content-main/content-main.component';
 import { ContentTopComponent } from './components/content/content-top/content-top.component';
 import { ModalModule } from 'ngx-bootstrap/modal';
-
+import { AgvComponent } from './components/agv/agv.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HeaderComponent,
     FooterComponent,
+  
+    AgvComponent,
+    
   ],
   imports: [
     BrowserModule,
@@ -26,7 +29,6 @@ import { ModalModule } from 'ngx-bootstrap/modal';
     ContentBottomComponent,
     ContentMainComponent,
     ContentTopComponent,
-  
     ModalModule.forRoot()
   ],
   providers: [
